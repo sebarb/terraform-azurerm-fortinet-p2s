@@ -22,3 +22,5 @@ override.tf.json
 # OS / IDE
 .DS_Store
 .vscode/
+#Other
+*.drawio
