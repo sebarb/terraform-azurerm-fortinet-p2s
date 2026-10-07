@@ -1,0 +1,4 @@
+application_name = "app_name"
+environment_name = "dev"
+location         = "location"
+admin_pass       = "admin pass"
