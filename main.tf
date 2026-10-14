@@ -132,7 +132,7 @@ resource "azurerm_network_security_rule" "nsg_rule_https" {
   source_address_prefix       = "*"
   source_port_range           = "*"
   destination_address_prefix  = "*"
-  destination_port_ranges     = ["443"]
+  destination_port_ranges     = ["8443"]
 }
 
 
@@ -150,7 +150,47 @@ resource "azurerm_network_security_rule" "nsg_rule_ssh" {
   destination_port_ranges     = ["22"]
 }
 
+resource "azurerm_network_security_rule" "nsg_rule_ike" {
+  name                        = "Allow_IKE"
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  protocol                    = "Udp"
+  priority                    = "540"
+  direction                   = "Inbound"
+  access                      = "Allow"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["500"]
+}
 
+resource "azurerm_network_security_rule" "nsg_rule_ipsec" {
+  name                        = "Allow_Ipsec"
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  protocol                    = "Udp"
+  priority                    = "550"
+  direction                   = "Inbound"
+  access                      = "Allow"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["4500"]
+}
+
+resource "azurerm_network_security_rule" "nsg_rule_https_ipsec" {
+  name                        = "Allow_https_ipsec"
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  protocol                    = "Tcp"
+  priority                    = "560"
+  direction                   = "Inbound"
+  access                      = "Allow"
+  source_address_prefix       = "*"
+  source_port_range           = "*"
+  destination_address_prefix  = "*"
+  destination_port_ranges     = ["443"]
+}
 
 resource "azurerm_subnet_network_security_group_association" "wan_nsg" {
   subnet_id                 = azurerm_subnet.subnet_wan.id
@@ -159,7 +199,7 @@ resource "azurerm_subnet_network_security_group_association" "wan_nsg" {
 
 //Create Linux VM workload
 resource "azurerm_linux_virtual_machine" "vm_workload" {
-  name                            = "vm-${var.application_name}-${var.environment_name}"
+  name                            = "vm-${var.application_name}-${var.environment_name}-workload"
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
   size                            = "Standard_b1s"
@@ -189,15 +229,15 @@ resource "azurerm_linux_virtual_machine" "vm_workload" {
 
 //Create Fortigate VM
 resource "azurerm_linux_virtual_machine" "vm_fortigate" {
-  name                            = "nva-${var.application_name}-${var.environment_name}"
+  name                            = "vm-${var.application_name}-${var.environment_name}-nva"
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
   size                            = "Standard_D2als_v6"
-  admin_username                  = "localadmin"
+  admin_username                  = var.admin_username
   admin_password                  = var.admin_pass
   disable_password_authentication = false
   admin_ssh_key {
-    username   = "localadmin"
+    username   = var.admin_username
     public_key = tls_private_key.ssh_key.public_key_openssh
   }
   os_disk {
@@ -222,3 +262,135 @@ resource "azurerm_linux_virtual_machine" "vm_fortigate" {
     product   = "fortinet_fortigate-vm"
   }
 }
+
+
+resource "fortios_firewall_address" "workload_subnet" {
+  name                 = "workload-subnet"
+  subnet               = "172.16.3.0 255.255.255.0"
+  associated_interface = "port2"
+  depends_on           = [azurerm_linux_virtual_machine.vm_fortigate]
+}
+
+resource "fortios_router_static" "static_route_workload" {
+  seq_num    = 1
+  dst        = "172.16.3.0 255.255.255.0"
+  gateway    = "172.16.2.1"
+  device     = "port2"
+  depends_on = [azurerm_linux_virtual_machine.vm_fortigate]
+}
+
+resource "fortios_firewall_policy" "snat_policy" {
+  policyid = 1
+  name     = "snat"
+  srcintf {
+    name = "port2"
+  }
+  dstintf {
+    name = "port1"
+  }
+  action   = "accept"
+  schedule = "always"
+  nat      = "enable"
+  service {
+    name = "ALL"
+  }
+  srcaddr {
+    name = fortios_firewall_address.workload_subnet.name
+  }
+  dstaddr {
+    name = "all"
+  }
+  depends_on = [azurerm_linux_virtual_machine.vm_fortigate, azurerm_public_ip.public_ip]
+}
+
+resource "fortios_user_local" "vpn_user" {
+  name       = var.vpn_user_local
+  type       = "password"
+  passwd     = var.admin_pass
+  status     = "enable"
+  two_factor = "disable"
+  depends_on = [azurerm_linux_virtual_machine.vm_fortigate, azurerm_public_ip.public_ip]
+}
+
+resource "fortios_user_group" "remote_group" {
+  group_type   = "firewall"
+  max_accounts = 0
+
+  name = "remote_group"
+
+  member {
+    name = var.vpn_user_local
+  }
+  depends_on = [azurerm_linux_virtual_machine.vm_fortigate, fortios_user_local.vpn_user]
+}
+
+resource "fortios_vpnipsec_phase1interface" "vpn_phase1" {
+  name = "phase1"
+  type = "dynamic"
+  //remote_gw          = azurerm_public_ip.public_ip.ip_address
+  ipv4_split_include = fortios_firewall_address.workload_subnet.name
+  interface          = "port1"
+  authmethod         = "psk"
+  psksecret          = var.vpn_preshared_key
+  proposal           = "aes256-sha256"
+  ike_version        = "2"
+  transport          = "udp"
+  authusrgrp         = fortios_user_group.remote_group.name
+  assign_ip          = "enable"
+  assign_ip_from     = "range"
+  eap                = "enable"
+  ipv4_start_ip      = "10.20.0.10"
+  ipv4_end_ip        = "10.20.0.100"
+  ipv4_netmask       = "255.255.255.0"
+  dhgrp              = "14"
+  mode_cfg           = "enable"
+  nattraversal       = "enable"
+  peertype           = "any"
+  eap_identity       = "send-request"
+  depends_on         = [fortios_user_group.remote_group, fortios_firewall_address.workload_subnet]
+}
+
+
+resource "fortios_vpnipsec_phase2interface" "vpn_phase2" {
+  name          = "phase2"
+  phase1name    = fortios_vpnipsec_phase1interface.vpn_phase1.name
+  proposal      = "aes256-sha256"
+  encapsulation = "tunnel-mode"
+  src_subnet    = "0.0.0.0 0.0.0.0"
+  dst_subnet    = "0.0.0.0 0.0.0.0"
+  pfs           = "enable"
+  dhgrp         = "14"
+  depends_on    = [fortios_vpnipsec_phase1interface.vpn_phase1]
+}
+
+resource "fortios_firewall_policy" "vpn_to_workload" {
+  policyid = 20
+  name     = "vpn-to-workload"
+
+  srcintf {
+    name = fortios_vpnipsec_phase1interface.vpn_phase1.name
+  }
+
+  dstintf {
+    name = "port2"
+  }
+
+  srcaddr {
+    name = "all"
+  }
+
+  dstaddr {
+    name = fortios_firewall_address.workload_subnet.name
+  }
+
+  service {
+    name = "SSH"
+  }
+
+  action     = "accept"
+  schedule   = "always"
+  nat        = "disable"
+  logtraffic = "all"
+  depends_on = [fortios_firewall_address.workload_subnet, fortios_vpnipsec_phase1interface.vpn_phase1]
+}
+
