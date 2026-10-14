@@ -1,3 +1,3 @@
 output "public_ip" {
-  value = azurerm_public_ip.public_ip.ip_address
+  value = module.azure_resources.public_ip_address
 }
