@@ -6,6 +6,7 @@ module "azure_resources" {
   application_name = var.application_name
   admin_username   = var.admin_username
   admin_pass       = var.admin_pass
+  alert_email      = var.alert_email
 }
 
 module "fortinet_resources" {
@@ -17,4 +18,5 @@ module "fortinet_resources" {
   admin_username    = var.admin_username
   depends_on        = [module.azure_resources]
 }
+
 

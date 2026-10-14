@@ -25,3 +25,6 @@ variable "vpn_preshared_key" {
 variable "vpn_user_local" {
   type = string
 }
+variable "alert_email" {
+  type = string
+}

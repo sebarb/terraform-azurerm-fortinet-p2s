@@ -14,3 +14,6 @@ variable "admin_pass" {
   type      = string
   sensitive = true
 }
+variable "alert_email" {
+  type = string
+}

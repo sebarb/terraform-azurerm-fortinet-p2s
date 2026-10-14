@@ -40,7 +40,7 @@ resource "azurerm_linux_virtual_machine" "vm_workload" {
   name                            = "vm-${var.application_name}-${var.environment_name}-workload"
   resource_group_name             = azurerm_resource_group.rg.name
   location                        = azurerm_resource_group.rg.location
-  size                            = "Standard_b1s"
+  size                            = "Standard_B1s"
   admin_username                  = "localadmin"
   admin_password                  = var.admin_pass
   disable_password_authentication = false
