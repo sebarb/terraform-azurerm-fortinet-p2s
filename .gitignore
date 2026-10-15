@@ -24,4 +24,4 @@ override.tf.json
 .vscode/
 #Other
 *.drawio
-.txt
+notes.txt
