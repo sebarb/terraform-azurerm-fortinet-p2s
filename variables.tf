@@ -28,3 +28,6 @@ variable "vpn_user_local" {
 variable "alert_email" {
   type = string
 }
+variable "local_IP" {
+  type = string
+}

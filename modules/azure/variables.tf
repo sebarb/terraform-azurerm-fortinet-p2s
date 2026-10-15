@@ -17,3 +17,7 @@ variable "admin_pass" {
 variable "alert_email" {
   type = string
 }
+variable "local_IP" {
+  description = "Trusted public IPv4 for Fortigate management"
+  type        = string
+}

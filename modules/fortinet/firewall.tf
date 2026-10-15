@@ -19,7 +19,7 @@ resource "fortios_firewall_policy" "snat_policy" {
   dstaddr {
     name = "all"
   }
-  //depends_on = [azurerm_linux_virtual_machine.vm_fortigate, azurerm_public_ip.public_ip]
+
 }
 
 
@@ -51,6 +51,6 @@ resource "fortios_firewall_policy" "vpn_to_workload" {
   schedule   = "always"
   nat        = "disable"
   logtraffic = "all"
-  //depends_on = [fortios_firewall_address.workload_subnet, fortios_vpnipsec_phase1interface.vpn_phase1]
+
 }
 

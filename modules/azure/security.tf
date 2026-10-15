@@ -49,7 +49,7 @@ resource "azurerm_network_security_rule" "nsg_rule_https" {
   priority                    = "510"
   direction                   = "Inbound"
   access                      = "Allow"
-  source_address_prefix       = "*"
+  source_address_prefix       = var.local_IP
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_ranges     = ["8443"]
@@ -64,7 +64,7 @@ resource "azurerm_network_security_rule" "nsg_rule_ssh" {
   priority                    = "530"
   direction                   = "Inbound"
   access                      = "Allow"
-  source_address_prefix       = "*"
+  source_address_prefix       = var.local_IP
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_ranges     = ["22"]
@@ -106,7 +106,7 @@ resource "azurerm_network_security_rule" "nsg_rule_https_ipsec" {
   priority                    = "560"
   direction                   = "Inbound"
   access                      = "Allow"
-  source_address_prefix       = "*"
+  source_address_prefix       = var.local_IP
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_ranges     = ["443"]

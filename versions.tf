@@ -19,7 +19,7 @@ provider "azurerm" {
 }
 
 provider "fortios" {
-  hostname = "${module.azure_resources.public_ip_address}:8443"
+  hostname = "${module.azure.public_ip_address}:8443"
   token    = var.fortios_api_token
   insecure = true
 
