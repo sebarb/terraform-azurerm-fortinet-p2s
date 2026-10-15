@@ -27,19 +27,7 @@ resource "azurerm_network_security_group" "nsg" {
   location            = azurerm_resource_group.rg.location
 }
 
-resource "azurerm_network_security_rule" "nsg_rule_http" {
-  name                        = "Allow_http"
-  resource_group_name         = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.nsg.name
-  protocol                    = "Tcp"
-  priority                    = "500"
-  direction                   = "Inbound"
-  access                      = "Allow"
-  source_address_prefix       = "*"
-  source_port_range           = "*"
-  destination_address_prefix  = "*"
-  destination_port_ranges     = ["80"]
-}
+
 
 resource "azurerm_network_security_rule" "nsg_rule_https" {
   name                        = "Allow_https"

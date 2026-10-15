@@ -42,8 +42,7 @@ resource "azurerm_linux_virtual_machine" "vm_workload" {
   location                        = azurerm_resource_group.rg.location
   size                            = "Standard_B1s"
   admin_username                  = "localadmin"
-  admin_password                  = var.admin_pass
-  disable_password_authentication = false
+  disable_password_authentication = true
 
   admin_ssh_key {
     username   = "localadmin"
