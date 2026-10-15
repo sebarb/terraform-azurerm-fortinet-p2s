@@ -1,3 +1,6 @@
+![Terraform CI](https://github.com/sebarb/terraform-azurerm-fortinet-p2s/actions/workflows/terraform-ci.yml/badge.svg)
+
+
 # FortiGate Azure p2s VPN
 ## Overview
 This lab deploys IPSec VPN with FortiGate-VM in Microsoft Azure as a Network Virtual Appliance (NVA), with a private Linux workload behind it.

@@ -1,0 +1,40 @@
+name: Terraform CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+    terraform:
+        name: Format, Validate, Lint, Security scan
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Setup Terraform
+            uses: Hashicorp/setup-terraform@v3
+          
+          - name: Terraform fmt check
+            id: fmt
+            run: terraform fmt -check -recursive
+            continue-on-error: false
+
+          - name: terraform init (no backend)
+            run: terraform init -backend=false
+
+          - name: terraform validate
+            run: terraform validate
+          
+          - name: setup TFLint
+            uses: terraform-linters/setup-tflint@v4
+            with:
+              tflint_version: latest
+
+          - name: init TFLint
+            run: tflint --init
+            env:
+              GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+          - name: run tflint
+            run: tflint --recursive
