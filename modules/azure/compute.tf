@@ -35,6 +35,18 @@ resource "azurerm_network_interface" "nic_workload" {
     subnet_id                     = azurerm_subnet.subnet_workload.id
   }
 }
+
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = "4096"
+}
+//Save the l
+resource "local_file" "private_key" {
+  content         = tls_private_key.ssh_key.private_key_pem
+  file_permission = "0600"
+  filename        = pathexpand("~/.ssh/vm_key")
+}
+
 //Create Linux VM workload
 resource "azurerm_linux_virtual_machine" "vm_workload" {
   name                            = "vm-${var.application_name}-${var.environment_name}-workload"
@@ -43,6 +55,7 @@ resource "azurerm_linux_virtual_machine" "vm_workload" {
   size                            = "Standard_B1s"
   admin_username                  = "localadmin"
   disable_password_authentication = true
+  allow_extension_operations      = false
 
   admin_ssh_key {
     username   = "localadmin"
@@ -72,6 +85,7 @@ resource "azurerm_linux_virtual_machine" "vm_fortigate" {
   admin_username                  = var.admin_username
   admin_password                  = var.admin_pass
   disable_password_authentication = false
+  allow_extension_operations      = false
   admin_ssh_key {
     username   = var.admin_username
     public_key = tls_private_key.ssh_key.public_key_openssh

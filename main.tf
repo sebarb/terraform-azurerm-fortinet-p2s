@@ -10,6 +10,7 @@ module "azure" {
   local_IP         = var.local_IP
 }
 
+
 module "fortinet" {
   source            = "./modules/fortinet"
   vpn_user_local    = var.vpn_user_local
@@ -17,3 +18,4 @@ module "fortinet" {
   vpn_preshared_key = var.vpn_preshared_key
   depends_on        = [module.azure]
 }
+
