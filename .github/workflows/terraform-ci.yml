@@ -10,10 +10,10 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - name: Checkout code
-            uses: actions/checkout@v4
+            uses: actions/checkout@v6
 
           - name: Setup Terraform
-            uses: Hashicorp/setup-terraform@v3
+            uses: Hashicorp/setup-terraform@v4
           
           - name: Terraform fmt check
             id: fmt
@@ -27,7 +27,7 @@ jobs:
             run: terraform validate
           
           - name: setup TFLint
-            uses: terraform-linters/setup-tflint@v4
+            uses: terraform-linters/setup-tflint@v6
             with:
               tflint_version: latest
 
